@@ -49,6 +49,43 @@
   justify-content: space-between;
   gap: 18px;
 }
+
+.results-message { margin: 7px 0 0; color: var(--muted); font-size: 13px; }
+.export-actions { flex-wrap: wrap; justify-content: flex-end; }
+.export-button { height: 44px; padding: 0 16px; background: var(--green); }
+.muted-button { background: white; color: var(--ink); border: 1px solid var(--line); }
+.metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 22px 0; }
+.metric-grid article { padding: 18px; border: 1px solid var(--line); border-radius: 14px; background: rgba(255,255,255,.8); }
+.metric-grid span { display: block; color: var(--muted); font-size: 12px; margin-bottom: 7px; }
+.metric-grid strong { font: 800 27px Manrope, sans-serif; color: var(--ink); }
+.directory-toolbar { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; }
+.directory-toolbar input { max-width: 430px; height: 44px; padding: 0 14px; }
+.danger { color: #b34141; margin-left: auto; }
+.source-pill { display: inline-block; padding: 5px 8px; border-radius: 7px; background: #eaf3e9; color: var(--green); font-size: 11px; font-weight: 700; }
+.source-location { display: block; max-width: 170px; margin-top: 6px; color: var(--muted); }
+.muted { color: var(--muted); }
+
+@media (max-width: 800px) {
+  .metric-grid { grid-template-columns: repeat(2, 1fr); }
+  .export-actions { justify-content: flex-start; }
+}
+
+@media print {
+  @page { size: A4 landscape; margin: 10mm; }
+  body { background: #fff; font-size: 9pt; }
+  .nav, .hero, .search-card, .progress, footer, .actions, .directory-toolbar, .orb, .toast { display: none !important; }
+  .shell { width: 100%; }
+  .results { padding: 0; }
+  .results-head { margin-bottom: 5mm; }
+  .results-head .eyebrow { display: block; }
+  .metric-grid { grid-template-columns: repeat(4, 1fr); gap: 3mm; margin: 0 0 5mm; }
+  .metric-grid article { padding: 3mm; break-inside: avoid; }
+  .table-wrap { overflow: visible; border: 0; box-shadow: none; }
+  table { min-width: 0; font-size: 7.5pt; }
+  th, td { padding: 2.2mm; }
+  tr { break-inside: avoid; }
+  a { color: #10231d !important; text-decoration: none !important; }
+}
 .download-card strong { font-size: 14px; }
 .download-card p { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
 .download-card button { flex: 0 0 auto; }
