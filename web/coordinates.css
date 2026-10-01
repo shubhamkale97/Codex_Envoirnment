@@ -1,0 +1,39 @@
+.label-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.text-button,
+.coordinate-toggle {
+  height: auto !important;
+  padding: 0;
+  background: none;
+  color: var(--green);
+  font-size: 12px;
+  display: inline;
+}
+
+.text-button:hover,
+.coordinate-toggle:hover {
+  background: none;
+  transform: none;
+  text-decoration: underline;
+}
+
+.coordinate-toggle { margin-top: 7px; }
+.coordinates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 9px;
+}
+.coordinates input {
+  height: 42px;
+  padding: 0 11px;
+}
+
+@media (max-width: 620px) {
+  .text-button,
+  .coordinate-toggle { order: initial !important; }
+}

@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Find local businesses and export structured Google Maps results.">
+  <title>Atlas — Local lead finder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/coordinates.css">
+</head>
+<body>
+  <div class="orb orb-one"></div><div class="orb orb-two"></div>
+  <header class="nav shell">
+    <a class="brand" href="/"><span class="brand-mark">A</span><span>Atlas</span></a>
+    <div class="service"><span id="serviceDot" class="dot"></span><span id="serviceText">Connecting</span></div>
+  </header>
+  <main class="shell">
+    <section class="hero">
+      <p class="eyebrow">LOCAL BUSINESS DISCOVERY</p>
+      <h1>Turn a location into<br><em>your next lead list.</em></h1>
+      <p class="subhead">Find public business listings, review the useful details, and export a clean CSV—all from one focused workspace.</p>
+    </section>
+
+    <section class="search-card">
+      <form id="searchForm">
+        <div class="field field-wide">
+          <label for="keyword">What are you looking for?</label>
+          <div class="input-wrap"><span class="icon">⌕</span><input id="keyword" placeholder="e.g. coffee shops, dentists, gyms" required></div>
+        </div>
+        <div class="field field-wide">
+          <div class="label-row"><label for="location">Where?</label><button id="useLocation" class="text-button" type="button">Use my location</button></div>
+          <div class="input-wrap"><span class="icon pin">●</span><input id="location" placeholder="City, neighborhood, or postcode" required></div>
+          <button id="coordinateToggle" class="coordinate-toggle" type="button">or enter coordinates</button>
+          <div id="coordinates" class="coordinates hidden">
+            <input id="latitude" type="number" min="-90" max="90" step="any" placeholder="Latitude" aria-label="Latitude">
+            <input id="longitude" type="number" min="-180" max="180" step="any" placeholder="Longitude" aria-label="Longitude">
+          </div>
+        </div>
+        <div class="field compact">
+          <label for="depth">Result depth</label>
+          <select id="depth"><option value="3">Quick · 3</option><option value="5" selected>Standard · 5</option><option value="10">Deep · 10</option></select>
+        </div>
+        <button id="searchButton" type="submit"><span>Find businesses</span><span>→</span></button>
+        <label class="check"><input id="email" type="checkbox"><span>Look for public emails <small>(slower)</small></span></label>
+      </form>
+      <p class="notice">Start with a small search. Repeated or high-volume collection may be rate-limited and may be restricted by Google’s terms.</p>
+    </section>
+
+    <section id="progress" class="progress hidden" aria-live="polite">
+      <div class="spinner"></div><div><strong id="progressTitle">Preparing your search…</strong><p id="progressText">This can take a few minutes.</p></div>
+    </section>
+
+    <section id="results" class="results hidden">
+      <div class="results-head">
+        <div><p class="eyebrow">SEARCH RESULTS</p><h2><span id="resultCount">0</span> businesses found</h2></div>
+        <div class="actions"><input id="filter" type="search" placeholder="Filter results"><button id="downloadButton" class="secondary">↓ Export CSV</button></div>
+      </div>
+      <div class="table-wrap">
+        <table><thead><tr><th>Business</th><th>Category</th><th>Contact</th><th>Rating</th><th>Address</th></tr></thead><tbody id="resultRows"></tbody></table>
+      </div>
+      <div id="emptyFilter" class="empty hidden">No results match that filter.</div>
+    </section>
+  </main>
+  <footer class="shell"><span>Atlas runs locally. Results are not sent to this website.</span><span>Use public data responsibly.</span></footer>
+  <div id="toast" class="toast hidden" role="alert"></div>
+  <script src="/app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,24 @@
+services:
+  google-maps-scraper:
+    image: gosom/google-maps-scraper:v1.15.0
+    restart: unless-stopped
+    command: ["-web", "-data-folder", "/gmapsdata"]
+    volumes:
+      - gmaps_data:/gmapsdata
+      - gmaps_cache:/opt
+
+  web:
+    build: .
+    restart: unless-stopped
+    environment:
+      SCRAPER_BASE_URL: http://google-maps-scraper:8080
+      PORT: "3000"
+      GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - google-maps-scraper
+
+volumes:
+  gmaps_data:
+  gmaps_cache:
