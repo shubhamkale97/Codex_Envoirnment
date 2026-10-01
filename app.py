@@ -43,6 +43,9 @@ class Handler(SimpleHTTPRequestHandler):
                 payload = response.read()
                 self.send_response(response.status)
                 self.send_header("Content-Type", response.headers.get("Content-Type", "application/json"))
+                if path.endswith("/download"):
+                    job_id = path.rstrip("/").split("/")[-2]
+                    self.send_header("Content-Disposition", f'attachment; filename="atlas-results-{job_id[:12]}.csv"')
                 self.send_header("Content-Length", str(len(payload)))
                 self.send_header("Cache-Control", "no-store")
                 self.end_headers()
