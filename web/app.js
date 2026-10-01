@@ -2,6 +2,8 @@ const $ = (id) => document.getElementById(id);
 let rows = [];
 let currentDownload = "";
 let browserCoordinates = null;
+let currentCsv = "";
+let currentFilename = "atlas-results.csv";
 
 function toast(message) {
   $("toast").textContent = message;
@@ -58,6 +60,15 @@ function parseCsv(text) {
   return records.map((record) => Object.fromEntries(headers.map((header, i) => [header, record[i] || ""])));
 }
 
+function downloadCsv() {
+  if (!currentCsv) return toast("Run a successful search before downloading.");
+  const url = URL.createObjectURL(new Blob([currentCsv], {type: "text/csv;charset=utf-8"}));
+  const link = document.createElement("a");
+  link.href = url; link.download = currentFilename;
+  document.body.appendChild(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
 async function poll(jobId) {
   for (let attempt = 1; attempt <= 120; attempt++) {
     const job = await request(`/api/jobs/${jobId}`);
@@ -73,6 +84,7 @@ async function poll(jobId) {
 $("searchForm").addEventListener("submit", async (event) => {
   event.preventDefault(); const button = $("searchButton");
   button.disabled = true; $("results").classList.add("hidden"); $("progress").classList.remove("hidden");
+  $("downloadLatest").disabled = true; $("downloadStatus").textContent = "Search running—your CSV will download automatically when ready.";
   $("progressTitle").textContent = "Locating your search area…"; $("progressText").textContent = "Converting the location into map coordinates.";
   try {
     const manualLat = $("latitude").value.trim(); const manualLon = $("longitude").value.trim();
@@ -86,11 +98,14 @@ $("searchForm").addEventListener("submit", async (event) => {
     $("progressTitle").textContent = "Finding businesses…"; $("progressText").textContent = location.label;
     const job = await request("/api/jobs", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({keyword:$("keyword").value, lat:location.lat, lon:location.lon, depth:Number($("depth").value), email:$("email").checked})});
     const jobId = job.id || job.ID; if (!jobId) throw new Error("The scraper did not return a job ID.");
-    await poll(jobId); currentDownload = `/api/jobs/${jobId}/download`;
+    await poll(jobId); currentDownload = `/api/jobs/${jobId}/download`; currentFilename = `atlas-results-${jobId.slice(0, 12)}.csv`;
     const response = await fetch(currentDownload); if (!response.ok) throw new Error("Could not download the completed results.");
-    rows = parseCsv(await response.text()); render(rows);
+    currentCsv = await response.text(); rows = parseCsv(currentCsv); render(rows);
+    $("downloadLatest").disabled = false;
+    $("downloadStatus").textContent = `${rows.length} rows ready. The CSV download has started; use the button to download it again.`;
     $("results").classList.remove("hidden"); $("results").scrollIntoView({behavior:"smooth", block:"start"});
-  } catch (error) { toast(error.message); }
+    downloadCsv();
+  } catch (error) { $("downloadStatus").textContent = `No file prepared: ${error.message}`; toast(error.message); }
   finally { button.disabled = false; $("progress").classList.add("hidden"); }
 });
 
@@ -115,5 +130,6 @@ $("useLocation").addEventListener("click", () => {
 });
 
 $("filter").addEventListener("input", () => render(rows));
-$("downloadButton").addEventListener("click", () => { if (currentDownload) window.location.href = currentDownload; });
+$("downloadButton").addEventListener("click", downloadCsv);
+$("downloadLatest").addEventListener("click", downloadCsv);
 checkHealth();
