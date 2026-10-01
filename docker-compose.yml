@@ -1,6 +1,8 @@
 services:
   google-maps-scraper:
-    image: gosom/google-maps-scraper:v1.15.0
+    # v1.15.0 references a removed Playwright driver download. v1.18.1 bundles
+    # its matching browser and driver under /opt/ms-playwright-go.
+    image: gosom/google-maps-scraper:v1.18.1
     restart: unless-stopped
     command: ["-web", "-data-folder", "/gmapsdata"]
     volumes:
