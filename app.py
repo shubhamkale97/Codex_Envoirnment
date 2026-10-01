@@ -3,6 +3,7 @@
 
 import json
 import os
+import re
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -104,7 +105,7 @@ class Handler(SimpleHTTPRequestHandler):
         return super().do_GET()
 
     def do_POST(self):
-        if self.path != "/api/jobs":
+        if self.path not in {"/api/jobs", "/api/alternative-search"}:
             return self.json_response(404, {"error": "Not found"})
         try:
             length = int(self.headers.get("Content-Length", "0"))
@@ -120,6 +121,8 @@ class Handler(SimpleHTTPRequestHandler):
                 raise ValueError("coordinates are outside the valid range")
         except (ValueError, TypeError, json.JSONDecodeError) as error:
             return self.json_response(400, {"error": str(error)})
+        if self.path == "/api/alternative-search":
+            return self.alternative_search(keyword, latitude, longitude)
         payload = {
             "name": "maps-lead-finder", "keywords": [keyword], "lang": "en",
             "zoom": 15, "lat": lat, "lon": lon, "radius": 10000,
@@ -127,6 +130,91 @@ class Handler(SimpleHTTPRequestHandler):
             "fast_mode": False, "max_time": 600,
         }
         return self.proxy("POST", "/api/v1/jobs", payload)
+
+    def alternative_search(self, keyword, latitude, longitude):
+        """Keyless background search using OpenStreetMap's Overpass API."""
+        stop_words = {"a", "an", "and", "business", "businesses", "company", "companies", "in", "near", "the"}
+        terms = [re.escape(term) for term in re.findall(r"[A-Za-z0-9]+", keyword.lower()) if len(term) > 2 and term not in stop_words]
+        pattern = "|".join(terms[:4]) or re.escape(keyword[:40])
+        # Nominatim can return nearby named businesses quickly and needs no key.
+        try:
+            delta = 0.18
+            params = urllib.parse.urlencode({
+                "q": " ".join(re.findall(r"[A-Za-z0-9]+", keyword)[:4]), "format": "jsonv2",
+                "limit": 40, "addressdetails": 1, "extratags": 1, "bounded": 1,
+                "viewbox": f"{longitude-delta},{latitude+delta},{longitude+delta},{latitude-delta}",
+            })
+            request = urllib.request.Request(f"https://nominatim.openstreetmap.org/search?{params}", headers={"User-Agent": USER_AGENT})
+            with urllib.request.urlopen(request, timeout=18) as response:
+                places = json.loads(response.read())
+            if places:
+                results = []
+                for place in places:
+                    extra = place.get("extratags") or {}
+                    results.append({
+                        "title": place.get("name") or place.get("display_name", "").split(",")[0],
+                        "category": str(place.get("type") or place.get("category") or "business").replace("_", " ").title(),
+                        "phone": extra.get("contact:phone") or extra.get("phone", ""),
+                        "emails": extra.get("contact:email") or extra.get("email", ""),
+                        "website": extra.get("contact:website") or extra.get("website", ""),
+                        "address": place.get("display_name", ""), "latitude": place.get("lat", ""),
+                        "longitude": place.get("lon", ""), "review_rating": "", "review_count": "",
+                        "provider": "OpenStreetMap",
+                    })
+                return self.json_response(200, {"results": results, "provider": "OpenStreetMap"})
+        except Exception:
+            pass
+        category_queries = []
+        lowered = keyword.lower()
+        mappings = {
+            "coffee": '["amenity"="cafe"]', "cafe": '["amenity"="cafe"]',
+            "restaurant": '["amenity"="restaurant"]', "dentist": '["amenity"="dentist"]',
+            "hospital": '["amenity"="hospital"]', "pharmacy": '["amenity"="pharmacy"]',
+            "gym": '["leisure"="fitness_centre"]', "hotel": '["tourism"="hotel"]',
+            "school": '["amenity"="school"]', "bank": '["amenity"="bank"]',
+        }
+        for word, selector in mappings.items():
+            if word in lowered:
+                category_queries.append(f'nwr(around:15000,{latitude},{longitude}){selector};')
+        overpass = (
+            f'[out:json][timeout:35];('
+            f'nwr(around:15000,{latitude},{longitude})["name"~"{pattern}",i];'
+            f'nwr(around:15000,{latitude},{longitude})["brand"~"{pattern}",i];'
+            f'nwr(around:15000,{latitude},{longitude})["operator"~"{pattern}",i];'
+            + "".join(category_queries) + ");out center tags 100;"
+        )
+        errors = []
+        payload = None
+        for endpoint in ("https://overpass-api.de/api/interpreter", "https://overpass.kumi.systems/api/interpreter"):
+            try:
+                data = urllib.parse.urlencode({"data": overpass}).encode()
+                request = urllib.request.Request(endpoint, data=data, headers={"User-Agent": USER_AGENT})
+                with urllib.request.urlopen(request, timeout=15) as response:
+                    payload = json.loads(response.read())
+                break
+            except Exception as error:
+                errors.append(str(error))
+        if payload is None:
+            return self.json_response(502, {"error": "Alternative map search unavailable", "detail": errors[-1] if errors else "Unknown error"})
+        results = []
+        for element in payload.get("elements", []):
+            tags = element.get("tags", {})
+            title = tags.get("name") or tags.get("brand") or tags.get("operator")
+            if not title:
+                continue
+            category = next((tags.get(key) for key in ("amenity", "shop", "office", "craft", "tourism", "leisure", "healthcare") if tags.get(key)), "business")
+            street = " ".join(filter(None, [tags.get("addr:housenumber"), tags.get("addr:street")]))
+            address = ", ".join(filter(None, [street, tags.get("addr:suburb"), tags.get("addr:city"), tags.get("addr:postcode")]))
+            center = element.get("center", element)
+            results.append({
+                "title": title, "category": category.replace("_", " ").title(),
+                "phone": tags.get("contact:phone") or tags.get("phone", ""),
+                "emails": tags.get("contact:email") or tags.get("email", ""),
+                "website": tags.get("contact:website") or tags.get("website", ""),
+                "address": address, "latitude": center.get("lat", ""), "longitude": center.get("lon", ""),
+                "review_rating": "", "review_count": "", "provider": "OpenStreetMap",
+            })
+        return self.json_response(200, {"results": results, "provider": "OpenStreetMap"})
 
 
 if __name__ == "__main__":

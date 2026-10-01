@@ -81,7 +81,10 @@ $("searchForm").addEventListener("submit",async(event)=>{
   $("resultsMessage").textContent="New results will appear here one by one while the search runs.";$("progressTitle").textContent="Locating your search area…";$("progressText").textContent="Converting the location into map coordinates.";
   try{const manualLat=$("latitude").value.trim(),manualLon=$("longitude").value.trim();let location;
     if(manualLat&&manualLon)location={lat:manualLat,lon:manualLon,label:`Coordinates ${manualLat}, ${manualLon}`};else if(browserCoordinates)location=browserCoordinates;else{try{location=await request(`/api/geocode?q=${encodeURIComponent($("location").value)}`);}catch{$("coordinates").classList.remove("hidden");throw new Error("Automatic geocoding is unavailable. Use “Use my location” or enter latitude and longitude.");}}
-    $("progressTitle").textContent=`Finding ${keyword}…`;$("progressText").textContent=location.label;
+    $("progressTitle").textContent=`Finding ${keyword}…`;$("progressText").textContent="Google Maps + keyless OpenStreetMap search running in parallel";
+    request("/api/alternative-search",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({keyword,lat:location.lat,lon:location.lon})})
+      .then((payload)=>{const added=addRows(payload.results||[],`${keyword} · OSM`,location.label);if(added){$("resultsMessage").textContent=`${added} leads added by the background OpenStreetMap search. Google Maps is still running…`;toast(`${added} alternative map results added.`);}})
+      .catch(()=>{});
     const job=await request("/api/jobs",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({keyword,lat:location.lat,lon:location.lon,depth:Number($("depth").value),email:$("email").checked})});const jobId=job.id||job.ID;if(!jobId)throw new Error("The scraper did not return a job ID.");
     const added=await streamJob(jobId,keyword,location.label);$("resultsMessage").textContent=`Search complete. ${added} new leads added live from “${keyword}”.`;toast(`Search complete—${added} new businesses added.`);
   }catch(error){$("resultsMessage").textContent=`Search could not finish: ${error.message}`;toast(error.message);}finally{button.disabled=false;$("progress").classList.add("hidden");}
