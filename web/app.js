@@ -1,6 +1,9 @@
 const $ = (id) => document.getElementById(id);
 let rows = [];
 let browserCoordinates = null;
+let resolvedLocation = null;
+let resolvedQuery = "";
+let locationTimer = null;
 
 function toast(message) {
   $("toast").textContent = message; $("toast").classList.remove("hidden");
@@ -14,6 +17,22 @@ async function request(url, options) {
 async function checkHealth() {
   try { await request("/api/health"); $("serviceDot").className = "dot live"; $("serviceText").textContent = "Service ready"; }
   catch { $("serviceDot").className = "dot dead"; $("serviceText").textContent = "Service offline"; }
+}
+
+function showResolved(location) {
+  resolvedLocation = location;
+  $("resolvedLabel").textContent = location.label;
+  $("resolvedCoordinates").textContent = `${Number(location.lat).toFixed(6)}, ${Number(location.lon).toFixed(6)} · ${location.provider || "exact coordinates"}`;
+  $("locationResolution").classList.remove("hidden");
+  $("latitude").value = location.lat; $("longitude").value = location.lon;
+}
+async function resolveTypedLocation(force=false) {
+  const query = $("location").value.trim();
+  if (!query || query === "Current location" || (!force && query.length < 3)) return null;
+  if (resolvedLocation && resolvedQuery === query) return resolvedLocation;
+  $("resolvedLabel").textContent = "Resolving location…"; $("resolvedCoordinates").textContent = query; $("locationResolution").classList.remove("hidden");
+  try { const location = await request(`/api/geocode?q=${encodeURIComponent(query)}`); resolvedQuery = query; showResolved(location); return location; }
+  catch (error) { resolvedLocation = null; $("locationResolution").classList.add("hidden"); if(force) throw error; return null; }
 }
 
 const value = (row, ...keys) => keys.map((key) => row[key]).find((item) => item != null && item !== "") || "";
@@ -79,18 +98,22 @@ async function streamJob(jobId, search, location) {
 $("searchForm").addEventListener("submit",async(event)=>{
   event.preventDefault();const button=$("searchButton"),keyword=$("keyword").value.trim();button.disabled=true;$("progress").classList.remove("hidden");
   $("resultsMessage").textContent="New results will appear here one by one while the search runs.";$("progressTitle").textContent="Locating your search area…";$("progressText").textContent="Converting the location into map coordinates.";
-  try{const manualLat=$("latitude").value.trim(),manualLon=$("longitude").value.trim();let location;
-    if(manualLat&&manualLon)location={lat:manualLat,lon:manualLon,label:`Coordinates ${manualLat}, ${manualLon}`};else if(browserCoordinates)location=browserCoordinates;else{try{location=await request(`/api/geocode?q=${encodeURIComponent($("location").value)}`);}catch{$("coordinates").classList.remove("hidden");throw new Error("Automatic geocoding is unavailable. Use “Use my location” or enter latitude and longitude.");}}
+  try{const manualLat=$("latitude").value.trim(),manualLon=$("longitude").value.trim(),radiusKm=Number($("radius").value);let location;
+    if(resolvedLocation&&resolvedQuery===$("location").value.trim())location=resolvedLocation;else if(browserCoordinates)location=browserCoordinates;else if(!$('coordinates').classList.contains('hidden')&&manualLat&&manualLon)location={lat:manualLat,lon:manualLon,label:`Coordinates ${manualLat}, ${manualLon}`,provider:"manual"};else{try{location=await resolveTypedLocation(true);}catch{$("coordinates").classList.remove("hidden");throw new Error("Automatic geocoding is unavailable. Use “Use my location” or enter latitude and longitude.");}}
     $("progressTitle").textContent=`Finding ${keyword}…`;$("progressText").textContent="Google Maps + keyless OpenStreetMap search running in parallel";
-    request("/api/alternative-search",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({keyword,lat:location.lat,lon:location.lon})})
+    request("/api/alternative-search",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({keyword,lat:location.lat,lon:location.lon,radius_km:radiusKm})})
       .then((payload)=>{const added=addRows(payload.results||[],`${keyword} · OSM`,location.label);if(added){$("resultsMessage").textContent=`${added} leads added by the background OpenStreetMap search. Google Maps is still running…`;toast(`${added} alternative map results added.`);}})
       .catch(()=>{});
-    const job=await request("/api/jobs",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({keyword,lat:location.lat,lon:location.lon,depth:Number($("depth").value),email:$("email").checked})});const jobId=job.id||job.ID;if(!jobId)throw new Error("The scraper did not return a job ID.");
+    const job=await request("/api/jobs",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({keyword,lat:location.lat,lon:location.lon,radius_km:radiusKm,depth:Number($("depth").value),email:$("email").checked})});const jobId=job.id||job.ID;if(!jobId)throw new Error("The scraper did not return a job ID.");
     const added=await streamJob(jobId,keyword,location.label);$("resultsMessage").textContent=`Search complete. ${added} new leads added live from “${keyword}”.`;toast(`Search complete—${added} new businesses added.`);
   }catch(error){$("resultsMessage").textContent=`Search could not finish: ${error.message}`;toast(error.message);}finally{button.disabled=false;$("progress").classList.add("hidden");}
 });
 
 $("coordinateToggle").addEventListener("click",()=>{const opening=$("coordinates").classList.contains("hidden");$("coordinates").classList.toggle("hidden");$("location").required=!opening&&!browserCoordinates;if(opening)$("latitude").focus();});
-$("useLocation").addEventListener("click",()=>{if(!navigator.geolocation)return toast("This browser does not provide location access. Enter coordinates instead.");$("useLocation").disabled=true;$("useLocation").textContent="Locating…";navigator.geolocation.getCurrentPosition(({coords})=>{browserCoordinates={lat:String(coords.latitude),lon:String(coords.longitude),label:"Your current location"};$("location").value="Current location";$("location").required=false;$("useLocation").textContent="Location ready";$("useLocation").disabled=false;},()=>{toast("Location permission was unavailable. Enter coordinates instead.");$("coordinates").classList.remove("hidden");$("useLocation").textContent="Use my location";$("useLocation").disabled=false;},{enableHighAccuracy:false,timeout:10000,maximumAge:300000});});
+$("useLocation").addEventListener("click",()=>{if(!navigator.geolocation)return toast("This browser does not provide location access. Enter coordinates instead.");$("useLocation").disabled=true;$("useLocation").textContent="Locating…";navigator.geolocation.getCurrentPosition(({coords})=>{browserCoordinates={lat:String(coords.latitude),lon:String(coords.longitude),label:"Your current location",provider:"browser GPS"};resolvedQuery="Current location";showResolved(browserCoordinates);$("location").value="Current location";$("location").required=false;$("useLocation").textContent="Location ready";$("useLocation").disabled=false;},()=>{toast("Location permission was unavailable. Enter coordinates instead.");$("coordinates").classList.remove("hidden");$("useLocation").textContent="Use my location";$("useLocation").disabled=false;},{enableHighAccuracy:false,timeout:10000,maximumAge:300000});});
+$("location").addEventListener("input",()=>{browserCoordinates=null;resolvedLocation=null;resolvedQuery="";$("locationResolution").classList.add("hidden");clearTimeout(locationTimer);locationTimer=setTimeout(()=>resolveTypedLocation(),700);});
+$("location").addEventListener("blur",()=>resolveTypedLocation());
+[$("latitude"),$("longitude")].forEach((input)=>input.addEventListener("input",()=>{resolvedLocation=null;resolvedQuery="";browserCoordinates=null;const lat=$("latitude").value,lon=$("longitude").value;if(lat&&lon)showResolved({lat,lon,label:"Manual coordinates",provider:"manual"});}));
+$("radius").addEventListener("input",()=>{$("radiusValue").textContent=`${$("radius").value} km`;});
 $("filter").addEventListener("input",render);$("downloadButton").addEventListener("click",downloadCsv);$("excelButton").addEventListener("click",downloadExcel);$("pdfButton").addEventListener("click",()=>{if(rows.length)window.print();});$("clearButton").addEventListener("click",()=>{if(confirm("Clear all collected leads from this page?")){rows=[];render();$("resultsMessage").textContent="Lead list cleared. Run a search to start again.";}});
 render();checkHealth();

@@ -33,6 +33,7 @@
         <div class="field field-wide">
           <div class="label-row"><label for="location">Where?</label><button id="useLocation" class="text-button" type="button">Use my location</button></div>
           <div class="input-wrap"><span class="icon pin">●</span><input id="location" placeholder="City, neighborhood, or postcode" required></div>
+          <div id="locationResolution" class="location-resolution hidden"><span>✓</span><div><strong id="resolvedLabel"></strong><small id="resolvedCoordinates"></small></div></div>
           <button id="coordinateToggle" class="coordinate-toggle" type="button">or enter coordinates</button>
           <div id="coordinates" class="coordinates hidden">
             <input id="latitude" type="number" min="-90" max="90" step="any" placeholder="Latitude" aria-label="Latitude">
@@ -44,6 +45,11 @@
           <select id="depth"><option value="3">Quick · 3</option><option value="5" selected>Standard · 5</option><option value="10">Deep · 10</option></select>
         </div>
         <button id="searchButton" type="submit"><span>Find businesses</span><span>→</span></button>
+        <div class="radius-control">
+          <div><label for="radius">Search radius</label><small>How far from the exact coordinates?</small></div>
+          <input id="radius" type="range" min="1" max="50" value="10" step="1">
+          <output id="radiusValue" for="radius">10 km</output>
+        </div>
         <label class="check"><input id="email" type="checkbox"><span>Look for public emails <small>(slower)</small></span></label>
       </form>
       <p class="notice">Start with a small search. Repeated or high-volume collection may be rate-limited and may be restricted by Google’s terms.</p>

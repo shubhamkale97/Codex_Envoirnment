@@ -114,31 +114,34 @@ class Handler(SimpleHTTPRequestHandler):
             lat = str(incoming.get("lat", "")).strip()
             lon = str(incoming.get("lon", "")).strip()
             depth = max(1, min(int(incoming.get("depth", 5)), 20))
+            radius_km = float(incoming.get("radius_km", 10))
             if not keyword or not lat or not lon:
                 raise ValueError("keyword, lat and lon are required")
             latitude = float(lat); longitude = float(lon)
             if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
                 raise ValueError("coordinates are outside the valid range")
+            if not 1 <= radius_km <= 50:
+                raise ValueError("radius must be between 1 and 50 km")
         except (ValueError, TypeError, json.JSONDecodeError) as error:
             return self.json_response(400, {"error": str(error)})
         if self.path == "/api/alternative-search":
-            return self.alternative_search(keyword, latitude, longitude)
+            return self.alternative_search(keyword, latitude, longitude, radius_km)
         payload = {
             "name": "maps-lead-finder", "keywords": [keyword], "lang": "en",
-            "zoom": 15, "lat": lat, "lon": lon, "radius": 10000,
+            "zoom": 15, "lat": lat, "lon": lon, "radius": int(radius_km * 1000),
             "depth": depth, "email": bool(incoming.get("email", False)),
             "fast_mode": False, "max_time": 600,
         }
         return self.proxy("POST", "/api/v1/jobs", payload)
 
-    def alternative_search(self, keyword, latitude, longitude):
+    def alternative_search(self, keyword, latitude, longitude, radius_km):
         """Keyless background search using OpenStreetMap's Overpass API."""
         stop_words = {"a", "an", "and", "business", "businesses", "company", "companies", "in", "near", "the"}
         terms = [re.escape(term) for term in re.findall(r"[A-Za-z0-9]+", keyword.lower()) if len(term) > 2 and term not in stop_words]
         pattern = "|".join(terms[:4]) or re.escape(keyword[:40])
         # Nominatim can return nearby named businesses quickly and needs no key.
         try:
-            delta = 0.18
+            delta = radius_km / 111
             params = urllib.parse.urlencode({
                 "q": " ".join(re.findall(r"[A-Za-z0-9]+", keyword)[:4]), "format": "jsonv2",
                 "limit": 40, "addressdetails": 1, "extratags": 1, "bounded": 1,
@@ -175,12 +178,12 @@ class Handler(SimpleHTTPRequestHandler):
         }
         for word, selector in mappings.items():
             if word in lowered:
-                category_queries.append(f'nwr(around:15000,{latitude},{longitude}){selector};')
+                category_queries.append(f'nwr(around:{int(radius_km * 1000)},{latitude},{longitude}){selector};')
         overpass = (
             f'[out:json][timeout:35];('
-            f'nwr(around:15000,{latitude},{longitude})["name"~"{pattern}",i];'
-            f'nwr(around:15000,{latitude},{longitude})["brand"~"{pattern}",i];'
-            f'nwr(around:15000,{latitude},{longitude})["operator"~"{pattern}",i];'
+            f'nwr(around:{int(radius_km * 1000)},{latitude},{longitude})["name"~"{pattern}",i];'
+            f'nwr(around:{int(radius_km * 1000)},{latitude},{longitude})["brand"~"{pattern}",i];'
+            f'nwr(around:{int(radius_km * 1000)},{latitude},{longitude})["operator"~"{pattern}",i];'
             + "".join(category_queries) + ");out center tags 100;"
         )
         errors = []

@@ -32,10 +32,21 @@
   height: 42px;
   padding: 0 11px;
 }
+.location-resolution { display:flex; gap:9px; align-items:flex-start; margin-top:8px; padding:9px 11px; border-radius:10px; background:#edf6ef; color:var(--green); }
+.location-resolution>span { display:grid; place-items:center; width:18px; height:18px; flex:0 0 auto; border-radius:50%; background:var(--green); color:white; font-size:11px; }
+.location-resolution strong { display:block; overflow:hidden; max-width:430px; text-overflow:ellipsis; white-space:nowrap; font-size:11px; }
+.location-resolution small { display:block; margin-top:2px; color:var(--muted); font-size:10px; font-variant-numeric:tabular-nums; }
+.radius-control { grid-column:1/-1; display:grid; grid-template-columns:190px minmax(180px,1fr) 65px; align-items:center; gap:14px; padding:12px 14px; border:1px solid var(--line); border-radius:12px; background:#f8faf6; }
+.radius-control label { display:block; margin:0; color:#40534c; font-size:12px; font-weight:700; }
+.radius-control small { color:var(--muted); font-size:10px; }
+.radius-control input { height:auto; padding:0; accent-color:var(--green); }
+.radius-control output { padding:7px 9px; border-radius:8px; background:var(--ink); color:white; text-align:center; font-size:12px; font-weight:700; }
 
 @media (max-width: 620px) {
   .text-button,
   .coordinate-toggle { order: initial !important; }
+  .radius-control { grid-template-columns:1fr 60px; width:100%; }
+  .radius-control>div { grid-column:1/-1; }
 }
 
 .download-card {
