@@ -16,7 +16,9 @@ services:
       PORT: "3000"
       GOOGLE_MAPS_API_KEY: ${GOOGLE_MAPS_API_KEY:-}
     ports:
-      - "127.0.0.1:3000:3000"
+      # Keep localhost as the safe default. Set HOST_BIND to the machine's LAN
+      # address (for example 192.168.3.9) to make the UI reachable on the LAN.
+      - "${HOST_BIND:-127.0.0.1}:3000:3000"
     depends_on:
       - google-maps-scraper
 

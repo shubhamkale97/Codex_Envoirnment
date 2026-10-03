@@ -11,6 +11,22 @@ curl http://127.0.0.1:3000/api/health
 
 Open `http://127.0.0.1:3000`. Stop it with `docker compose down`.
 
+### LAN access
+
+The safe default listens only on localhost. To serve the UI from a specific LAN address, create a `.env` file next to `docker-compose.yml`:
+
+```dotenv
+HOST_BIND=192.168.3.9
+```
+
+Then recreate the web container:
+
+```bash
+docker compose up --build -d --force-recreate
+```
+
+Other devices on the same network can open `http://192.168.3.9:3000`. Allow inbound TCP port 3000 in the host firewall for the private network profile. The scraper API remains internal to Docker and is not published.
+
 `GOOGLE_MAPS_API_KEY` is optional. When present with the **Geocoding API** enabled, it resolves typed locations server-side and is never sent to the browser. Without a key, Atlas tries OpenStreetMap Nominatim. If public geocoding is blocked or offline, users can choose **Use my location** (browser geolocation) or enter latitude/longitude manually; those paths require no geocoding API or key.
 
 Business results use a scraper rather than Google's official Places API and can be rate-limited. Start with depth 3–5, avoid repeated bulk jobs, follow Google's terms and applicable privacy/marketing laws, and verify results before using them.
@@ -21,7 +37,7 @@ Business results use a scraper rather than Google's official Places API and can 
 - `web/`: responsive frontend.
 - `google-maps-scraper`: server-side scraper container; it is not directly exposed to the host.
 
-The app itself is bound to `127.0.0.1` by default. Add authentication before exposing it publicly.
+The app itself is bound to `127.0.0.1` by default. `HOST_BIND` can expose it to a trusted LAN. Add authentication and TLS before exposing it to the public Internet.
 
 ## Credits
 
