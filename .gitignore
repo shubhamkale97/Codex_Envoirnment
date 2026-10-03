@@ -3,3 +3,6 @@ __pycache__/
 .DS_Store
 results-*.csv
 results-*.json
+.env
+.env.*
+!.env.example

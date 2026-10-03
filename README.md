@@ -1,6 +1,16 @@
-# Atlas — Google Maps lead finder
+# SYNCAXIS LEADGEN TOOL
 
-Atlas is a local web interface for the MIT-licensed [`gosom/google-maps-scraper`](https://github.com/gosom/google-maps-scraper). It geocodes a place, starts a conservative search job, shows the results, and exports the original CSV.
+Syncaxis Leadgen Tool is a local web interface for the MIT-licensed [`gosom/google-maps-scraper`](https://github.com/gosom/google-maps-scraper). It geocodes a place, starts a conservative search job, shows the results, and exports the original CSV. Developed by [SNIPER](https://www.linkedin.com/in/sniper97/).
+
+## Branding and copyright year
+
+The responsive layout uses a locally bundled Bootstrap 5.3.8. The Syncaxis logo is
+served locally. `network_year.py` obtains the copyright year from TimeAPI over HTTPS,
+with Cloudflare internet time as a fallback, using the Asia/Kolkata time zone.
+`/api/time` refreshes that year hourly; `web/branding.js` updates open pages hourly
+and when a page becomes visible. Neither the browser nor host wall clock supplies
+the copyright year. If internet time is unavailable, the last verified year is
+retained in the `leadgen_meta` Docker volume; a first-time offline start shows 2026.
 
 ## Run
 

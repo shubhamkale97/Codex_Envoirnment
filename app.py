@@ -9,6 +9,7 @@ import urllib.parse
 import urllib.request
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from network_year import current_year
 
 ROOT = Path(__file__).parent / "web"
 SCRAPER_URL = os.environ.get("SCRAPER_BASE_URL", "http://127.0.0.1:8080").rstrip("/")
@@ -58,6 +59,8 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
+        if parsed.path == "/api/time":
+            return self.json_response(200, current_year())
         if parsed.path == "/api/health":
             return self.proxy("GET", "/api/v1/jobs")
         if parsed.path == "/api/geocode":
@@ -221,5 +224,5 @@ class Handler(SimpleHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    print(f"Maps Lead Finder: http://127.0.0.1:{PORT}")
+    print(f"SYNCAXIS LEADGEN TOOL: http://127.0.0.1:{PORT}")
     ThreadingHTTPServer(("0.0.0.0", PORT), Handler).serve_forever()

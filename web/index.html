@@ -4,33 +4,34 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Find local businesses and export structured Google Maps results.">
-  <title>Atlas — Local lead finder</title>
+  <title>SYNCAXIS LEADGEN TOOL</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/styles.css">
+  <link rel="stylesheet" href="/vendor/bootstrap.min.css">
+  <link rel="stylesheet" href="/brand.css">
   <link rel="stylesheet" href="/coordinates.css">
 </head>
 <body>
   <div class="orb orb-one"></div><div class="orb orb-two"></div>
-  <header class="nav shell">
-    <a class="brand" href="/"><span class="brand-mark">A</span><span>Atlas</span></a>
+  <header class="site-nav shell">
+    <a class="brand" href="/" aria-label="Syncaxis Leadgen Tool home"><img class="brand-logo" src="/assets/syncaxis-logo.png" alt="Syncaxis"><span class="brand-divider" aria-hidden="true"></span><span class="brand-product">LEADGEN <small>TOOL</small></span></a>
     <div class="service"><span id="serviceDot" class="dot"></span><span id="serviceText">Connecting</span></div>
   </header>
   <main class="shell">
     <section class="hero">
-      <p class="eyebrow">LOCAL BUSINESS DISCOVERY</p>
+      <p class="eyebrow">SYNCAXIS LEADGEN TOOL</p>
       <h1>Turn a location into<br><em>your next lead list.</em></h1>
       <p class="subhead">Build a live business directory search by search. Every result appears instantly in one growing workspace, ready for Excel or a polished A4 report.</p>
     </section>
 
     <section class="search-card">
-      <form id="searchForm">
-        <div class="field field-wide">
+      <form id="searchForm" class="row g-3 align-items-start">
+        <div class="field col-12 col-lg-4">
           <label for="keyword">What are you looking for?</label>
           <div class="input-wrap"><span class="icon">⌕</span><input id="keyword" placeholder="e.g. coffee shops, dentists, gyms" required></div>
         </div>
-        <div class="field field-wide">
+        <div class="field col-12 col-lg-4">
           <div class="label-row"><label for="location">Where?</label><button id="useLocation" class="text-button" type="button">Use my location</button></div>
           <div class="input-wrap"><span class="icon pin">●</span><input id="location" placeholder="City, neighborhood, or postcode" required></div>
           <div id="locationResolution" class="location-resolution hidden"><span>✓</span><div><strong id="resolvedLabel"></strong><small id="resolvedCoordinates"></small></div></div>
@@ -40,17 +41,17 @@
             <input id="longitude" type="number" min="-180" max="180" step="any" placeholder="Longitude" aria-label="Longitude">
           </div>
         </div>
-        <div class="field compact">
+        <div class="field compact col-12 col-sm-6 col-lg-2">
           <label for="depth">Result depth</label>
           <select id="depth"><option value="3">Quick · 3</option><option value="5" selected>Standard · 5</option><option value="10">Deep · 10</option></select>
         </div>
-        <button id="searchButton" type="submit"><span>Find businesses</span><span>→</span></button>
-        <div class="radius-control">
+        <div class="search-submit col-12 col-lg-2"><button id="searchButton" class="btn btn-primary w-100" type="submit"><span>Find businesses</span><span aria-hidden="true">→</span></button></div>
+        <div class="col-12"><div class="radius-control">
           <div><label for="radius">Search radius</label><small>How far from the exact coordinates?</small></div>
           <input id="radius" type="range" min="1" max="50" value="10" step="1">
           <output id="radiusValue" for="radius">10 km</output>
-        </div>
-        <label class="check"><input id="email" type="checkbox"><span>Look for public emails <small>(slower)</small></span></label>
+        </div></div>
+        <div class="col-12"><label class="check"><input id="email" type="checkbox"><span>Look for public emails <small>(slower)</small></span></label></div>
       </form>
       <p class="notice">Start with a small search. Repeated or high-volume collection may be rate-limited and may be restricted by Google’s terms.</p>
     </section>
@@ -68,24 +69,29 @@
           <button id="downloadButton" class="export-button muted-button" disabled>↓ CSV</button>
         </div>
       </div>
-      <div class="metric-grid">
-        <article><span>Total leads</span><strong id="metricTotal">0</strong></article>
-        <article><span>With phone</span><strong id="metricPhone">0</strong></article>
-        <article><span>With website</span><strong id="metricWebsite">0</strong></article>
-        <article><span>Average rating</span><strong id="metricRating">—</strong></article>
+      <div class="metric-grid row g-3">
+        <div class="col-6 col-lg-3"><article><span>Total leads</span><strong id="metricTotal">0</strong></article></div>
+        <div class="col-6 col-lg-3"><article><span>With phone</span><strong id="metricPhone">0</strong></article></div>
+        <div class="col-6 col-lg-3"><article><span>With website</span><strong id="metricWebsite">0</strong></article></div>
+        <div class="col-6 col-lg-3"><article><span>Average rating</span><strong id="metricRating">—</strong></article></div>
       </div>
       <div class="directory-toolbar">
         <input id="filter" type="search" placeholder="Filter by name, category, location…">
         <button id="clearButton" class="text-button danger" type="button" disabled>Clear list</button>
       </div>
-      <div class="table-wrap">
+      <div class="table-wrap table-responsive" tabindex="0" role="region" aria-label="Lead directory, scroll horizontally to view all columns">
         <table><thead><tr><th>Business</th><th>Category</th><th>Contact</th><th>Rating</th><th>Address</th><th>Search</th></tr></thead><tbody id="resultRows"></tbody></table>
       </div>
       <div id="emptyFilter" class="empty">No leads yet. Run your first search above and results will appear here.</div>
     </section>
   </main>
-  <footer class="shell"><span>Atlas runs locally. Results are not sent to this website.</span><span>Use public data responsibly.</span></footer>
+  <footer class="site-footer shell">
+    <div class="footer-identity"><span>Find the right businesses. Build your next opportunity.</span></div>
+    <div class="footer-meta"><span>© <span id="copyrightYear">2026</span> Syncaxis. All rights reserved.</span><span>Developed by <a href="https://www.linkedin.com/in/sniper97/" target="_blank" rel="noopener noreferrer">SNIPER <span aria-hidden="true">↗</span></a></span></div>
+  </footer>
   <div id="toast" class="toast hidden" role="alert"></div>
+  <script src="/vendor/bootstrap.bundle.min.js" defer></script>
   <script src="/app.js" defer></script>
+  <script src="/branding.js" defer></script>
 </body>
 </html>
